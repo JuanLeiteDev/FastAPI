@@ -41,3 +41,11 @@ def login(user: UserLogin, response: Response, session: Session = Depends(get_se
 @auth_router.get("/me", response_model=UserResponse, status_code=200)
 def get_me(current_user: User = Depends(get_current_user)) -> UserResponse:
     return current_user
+
+@auth_router.post("/logout", status_code=200)
+def logout(response: Response):
+    response.delete_cookie(
+        key="access_token"
+    )
+
+    return {"mensagem": "Logout feito com sucesso."}

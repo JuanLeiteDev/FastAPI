@@ -8,7 +8,7 @@ import os
 load_dotenv()
 password_hash = PasswordHash.recommended()
 
-ACCESS_TOKEN_EXPIRE_MINUTES = 1
+ACCESS_TOKEN_EXPIRE_MINUTES = 15
 ALGORITHM = os.getenv("ALGORITHM")
 DATABASE_URL = os.getenv("DATABASE_URL")
 SECRET_KEY = os.getenv("SECRET_KEY")
