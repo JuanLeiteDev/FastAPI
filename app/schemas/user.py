@@ -13,3 +13,7 @@ class UserResponse(BaseModel):
     admin: bool
 
     model_config = ConfigDict(from_attributes=True)
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str

@@ -1,1 +1,1 @@
-from .auth_service import create_account
+from .auth_service import create_account, authenticate_user
