@@ -1,0 +1,12 @@
+from sqlalchemy.orm import mapped_column, Mapped
+from app.database import Base
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str]
+    email: Mapped[str] = mapped_column(unique=True, index=True)
+    password: Mapped[str]
+    status: Mapped[bool] = mapped_column(default=True)
+    admin: Mapped[bool] = mapped_column(default=False)

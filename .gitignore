@@ -3,3 +3,4 @@ venv
 alembic
 __pycache__
 alembic.ini
+*.db

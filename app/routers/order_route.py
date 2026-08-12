@@ -1,3 +1,5 @@
+#1. Importo o router do FastAPI
 from fastapi import APIRouter
 
-order_router = APIRouter(prefix="/order", tags="orders")
+# 2. Crio o responsável por criar as rotas de pedidos
+order_router = APIRouter(prefix="/pedidos", tags=["pedidos"])
