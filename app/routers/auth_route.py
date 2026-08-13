@@ -100,5 +100,10 @@ def confirm_email(
 # rate limit
 # Validade dos tokens
 # Verificar status de administrador
+# Verificar email confirmado
 # otp em json
 # Concorrência
+# Esqueci minha senha
+# Gerar 6 códigos caso não tenha mais acesso ao 2FA
+# Possibilidade de trocar 2FA
+# Apagar minha conta
