@@ -29,6 +29,12 @@ def setup_2fa(user: User) -> str:
 
 def validate_2fa(user: User, otp: str):
     ecrypted_secret = user.secret_key_2fa
+    if not ecrypted_secret:
+        raise HTTPException(
+            status_code=401,
+            detail="Autenticação 2FA ainda não foi configurada."
+        )
+    
     decrypted_secret = decrypt_secret_2fa(secret=ecrypted_secret)
     totp = pyotp.TOTP(decrypted_secret)
 

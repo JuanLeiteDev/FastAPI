@@ -22,7 +22,7 @@ def login(user: UserLogin, response: Response, session: Session = Depends(get_se
                     detail="Email ou senha incorretos."
                 )
 
-    token = create_token(existing_user, 2, "temporary")
+    token = create_token(existing_user, 5, "temporary")
 
     response.set_cookie(
         key="temporary_token",
@@ -34,9 +34,15 @@ def login(user: UserLogin, response: Response, session: Session = Depends(get_se
         path="/Autenticar"
     )
 
+    if not existing_user.email_active:
+        mensagem = "Necessário confirmar email."
+    else:
+        mensagem = "Autenticação 2FA obrigatória."
+        
     return {
-        "mensagem": "Autenticação 2FA obrigatória.",
-        "active": existing_user.security_2fa_active
+        "mensagem": mensagem,
+        "email": existing_user.email_active,
+        "auth2fa": existing_user.security_2fa_active
     }
 
 @auth_router.post("/Confirmar2FA", status_code=200, response_model=UserResponse)
@@ -46,6 +52,12 @@ def confirm_2fa(
     user: User = Depends(get_user_from_token("temporary")), 
     session: Session = Depends(get_session)
 ):
+    if not user.email_active:
+        raise HTTPException(
+            status_code=401,
+            detail="É obrigatório a confirmação do e-mail primeiro."
+        )
+    
     if not validate_2fa(user, otp):
         raise HTTPException(
             status_code=401,
@@ -81,6 +93,12 @@ def active_security_2fa(
     user: User = Depends(get_user_from_token("temporary")), 
     session: Session = Depends(get_session)
 ):
+    if not user.email_active:
+        raise HTTPException(
+            status_code=401,
+            detail="É obrigatório a confirmação do e-mail primeiro."
+        )
+    
     if user.security_2fa_active:
         raise HTTPException(
             status_code=400,
@@ -97,6 +115,7 @@ def confirm_email(
     pass
 
 # Refresh Token
+# Adicionar secure=True aos tokens
 # rate limit
 # Validade dos tokens
 # Verificar status de administrador
