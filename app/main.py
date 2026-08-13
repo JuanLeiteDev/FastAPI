@@ -7,8 +7,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 # 2. Importo as rotas
-from app.routers import auth_router
-from app.routers import user_router
+from app.routers.auth_route import auth_router
+from app.routers.user_route import user_router
 
 # 3. Crio a app
 app = FastAPI()

@@ -1,5 +1,5 @@
 from pwdlib import PasswordHash
-from app.models import User
+from app.models.user import User
 from datetime import datetime, timezone, timedelta
 from fastapi import HTTPException, Response
 from fastapi.responses import StreamingResponse

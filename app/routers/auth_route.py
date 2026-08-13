@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
-from app.schemas import UserResponse, UserCreate, UserLogin
+from app.schemas.user import UserResponse, UserCreate, UserLogin
 from app.dependencies import get_session, get_user_from_token
 from app.services.auth_service import create_account, authenticate_user, create_2fa
 from app.security import create_token, validate_2fa
-from app.models import User
+from app.models.user import User
 
 auth_router = APIRouter(prefix="/Autenticar", tags=["Autenticar"])
 
@@ -88,3 +88,17 @@ def active_security_2fa(
         )
     
     return create_2fa(user, session)
+
+@auth_router.post("/ConfirmarEmail", status_code=200)
+def confirm_email(
+    user: User = Depends(get_user_from_token("temporary")),
+    session: Session = Depends(get_session)
+):
+    pass
+
+# Refresh Token
+# rate limit
+# Validade dos tokens
+# Verificar status de administrador
+# otp em json
+# Concorrência

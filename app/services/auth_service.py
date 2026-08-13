@@ -1,10 +1,9 @@
-from app.schemas import UserCreate, UserLogin
+from app.schemas.user import UserCreate, UserLogin
 from sqlalchemy.orm import Session
-from app.models import User
+from app.models.user import User
 from fastapi import HTTPException
 from app.repository.user_repository import get_user_by_email, create_user
-from app.security import password_hash
-from app.security import setup_2fa, encrypt_secret_2fa, qrcode_generate
+from app.security import password_hash, setup_2fa, encrypt_secret_2fa, qrcode_generate
 
 
 def create_account(user: UserCreate, session: Session) -> User:

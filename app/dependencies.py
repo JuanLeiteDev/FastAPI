@@ -1,12 +1,12 @@
 # 1. Importo o criador de sessão
 from sqlalchemy.orm import sessionmaker, Session
 from fastapi import Request, Depends, HTTPException
-from app.models import User
+from app.models.user import User
 from app.security import decode_token
 from app.repository.user_repository import get_user_by_id
 
 # 2. Importo o responsável por criar sessões e que já está ligado com minha base de dados
-from app.database import db_engine
+from app.database.db import db_engine
 
 def get_session():
     """

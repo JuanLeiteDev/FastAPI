@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from app.models import User
+from app.models.user import User
 
 def get_user_by_email(email: str, session: Session) -> User | None:
     return session.scalar(
