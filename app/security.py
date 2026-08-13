@@ -1,9 +1,19 @@
 from pwdlib import PasswordHash
 from app.models.user import User
+from app.models.email import TemporaryEmail
 from datetime import datetime, timezone, timedelta
-from fastapi import HTTPException, Response
+from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
-from app.config import SECRET_KEY, SECRET_KEY_2FA, ALGORITHM, SALT
+from app.config import (
+    SECRET_KEY, 
+    SECRET_KEY_2FA, 
+    ALGORITHM, 
+    SALT, 
+    SMTP_FROM, 
+    SMTP_HOST, 
+    SMTP_PASSWORD, 
+    SMTP_PORT
+)
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
@@ -14,6 +24,7 @@ import pyotp
 import base64
 import qrcode
 import io
+import aiosmtplib
 
 password_hash = PasswordHash.recommended()
 
@@ -35,7 +46,7 @@ def validate_2fa(user: User, otp: str):
             detail="Autenticação 2FA ainda não foi configurada."
         )
     
-    decrypted_secret = decrypt_secret_2fa(secret=ecrypted_secret)
+    decrypted_secret = decrypt_message(secret=ecrypted_secret)
     totp = pyotp.TOTP(decrypted_secret)
 
     if not totp.verify(otp=otp):
@@ -61,14 +72,14 @@ def qrcode_generate(uri: str):
 
     return StreamingResponse(buffer, media_type="image/png")
 
-def encrypt_secret_2fa(secret: str):
+def encrypt_message(secret: str):
     new_secret_key = format_secret_2fa()
     fernet = Fernet(new_secret_key)
     encrypted = fernet.encrypt(secret.encode())
 
     return encrypted.decode()
 
-def decrypt_secret_2fa(secret: str):
+def decrypt_message(secret: str):
     new_secret_key = format_secret_2fa()
     fernet = Fernet(new_secret_key)
     decryped = fernet.decrypt(secret)
@@ -130,3 +141,13 @@ def decode_token(token: str) -> dict:
             status_code=401,
             detail="Token inválido."
         )
+
+def configure_email() -> dict[str, str | None]:
+    config = {
+        "hostname": SMTP_HOST,
+        "port": SMTP_PORT,
+        "username": SMTP_FROM,
+        "password": SMTP_PASSWORD,
+    }
+
+    return config

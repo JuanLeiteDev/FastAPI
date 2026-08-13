@@ -1,118 +1,89 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, Response, BackgroundTasks, HTTPException
 from sqlalchemy.orm import Session
 from app.schemas.user import UserResponse, UserCreate, UserLogin
+from app.schemas.email import EmailConfirm
 from app.dependencies import get_session, get_user_from_token
-from app.services.auth_service import create_account, authenticate_user, create_2fa
-from app.security import create_token, validate_2fa
+from app.services.auth_service import (
+    create_account_service, 
+    login_service, 
+    confirm_2fa_service, 
+    active_security_2fa_service,
+    send_email_service,
+    confirm_email_service
+)
 from app.models.user import User
+from app.repository.email_repository import get_email_by_email
 
 auth_router = APIRouter(prefix="/Autenticar", tags=["Autenticar"])
 
 @auth_router.post("/CriarConta", response_model=UserResponse, status_code=201)
-def create_user(user: UserCreate, session: Session = Depends(get_session)):
-    return create_account(user, session)
+async def create_account(user: UserCreate, session: Session = Depends(get_session)):
+    return create_account_service(user, session)
+
+
 
 @auth_router.post("/Entrar", status_code=200)
-def login(user: UserLogin, response: Response, session: Session = Depends(get_session)):
-    existing_user = authenticate_user(user, session)
+async def login(user: UserLogin, response: Response, session: Session = Depends(get_session)):
+    return login_service(user, session, response)
 
-    if not existing_user:
-        raise HTTPException(
-                    status_code=401,
-                    detail="Email ou senha incorretos."
-                )
 
-    token = create_token(existing_user, 5, "temporary")
-
-    response.set_cookie(
-        key="temporary_token",
-        value=token,
-        httponly=True,
-        secure=False,
-        samesite="lax",
-        max_age=900,
-        path="/Autenticar"
-    )
-
-    if not existing_user.email_active:
-        mensagem = "Necessário confirmar email."
-    else:
-        mensagem = "Autenticação 2FA obrigatória."
-        
-    return {
-        "mensagem": mensagem,
-        "email": existing_user.email_active,
-        "auth2fa": existing_user.security_2fa_active
-    }
 
 @auth_router.post("/Confirmar2FA", status_code=200, response_model=UserResponse)
-def confirm_2fa(
+async def confirm_2fa(
     otp: str, 
     response: Response, 
     user: User = Depends(get_user_from_token("temporary")), 
     session: Session = Depends(get_session)
 ):
-    if not user.email_active:
-        raise HTTPException(
-            status_code=401,
-            detail="É obrigatório a confirmação do e-mail primeiro."
-        )
-    
-    if not validate_2fa(user, otp):
-        raise HTTPException(
-            status_code=401,
-            detail="Código inválido"
-        )
+    return confirm_2fa_service(otp, response, user, session)
 
-    if not user.security_2fa_active:
-        user.security_2fa_active = True
-        session.commit()
-
-    token = create_token(user, 15, "access")
-
-    response.delete_cookie(
-        key="temporary_token",
-        path="/Autenticar"
-    )
-    
-    response.set_cookie(
-        key="access_token",
-        value=token,
-        httponly=True,
-        secure=False,
-        samesite="lax",
-        max_age=900,
-        path="/"
-    )
-
-    return user
 
 
 @auth_router.post("/Ativar2FA", status_code=200)
-def active_security_2fa(
+async def active_security_2fa(
     user: User = Depends(get_user_from_token("temporary")), 
     session: Session = Depends(get_session)
 ):
-    if not user.email_active:
-        raise HTTPException(
-            status_code=401,
-            detail="É obrigatório a confirmação do e-mail primeiro."
-        )
-    
-    if user.security_2fa_active:
-        raise HTTPException(
-            status_code=400,
-            detail="Autenticação 2FA já foi configurada."
-        )
-    
-    return create_2fa(user, session)
+    return active_security_2fa_service(user, session)
 
-@auth_router.post("/ConfirmarEmail", status_code=200)
-def confirm_email(
+
+
+@auth_router.post("/ConfirmarEmail", status_code=200, response_model=UserResponse)
+async def confirm_email(
+    code: EmailConfirm,
     user: User = Depends(get_user_from_token("temporary")),
     session: Session = Depends(get_session)
 ):
-    pass
+    if user.email_active:
+        raise HTTPException(
+            status_code=400,
+            detail="Email já confirmado."
+        )
+
+    existing_temp_email = get_email_by_email(user.email, session)
+    if not existing_temp_email:
+        raise HTTPException(
+            status_code=401,
+            detail="Não autenticado."
+        )
+    
+    return confirm_email_service(user, session, code)
+
+@auth_router.post("/EnviarEmail", status_code=200)
+async def send_email(
+    background_task: BackgroundTasks,
+    user: User = Depends(get_user_from_token("temporary")),
+    session: Session = Depends(get_session)
+):
+    if user.email_active:
+        raise HTTPException(
+            status_code=400,
+            detail="Email já confirmado."
+        )
+        
+    background_task.add_task(send_email_service, user, session)
+
+    return {"message": "Email colocado para envio."}
 
 # Refresh Token
 # Adicionar secure=True aos tokens

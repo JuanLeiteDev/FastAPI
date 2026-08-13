@@ -29,6 +29,7 @@ class UserResponse(BaseModel):
     email: EmailStr
     admin: bool
     security_2fa_active: bool
+    email_active: bool
 
     model_config = ConfigDict(from_attributes=True)
 
