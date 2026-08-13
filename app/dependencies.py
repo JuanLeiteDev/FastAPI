@@ -1,8 +1,8 @@
 # 1. Importo o criador de sessão
 from sqlalchemy.orm import sessionmaker, Session
-from fastapi import Cookie, Depends, HTTPException
+from fastapi import Request, Depends, HTTPException
 from app.models import User
-from app.services.auth_service import decode_access_token
+from app.security import decode_token
 from app.repository.user_repository import get_user_by_id
 
 # 2. Importo o responsável por criar sessões e que já está ligado com minha base de dados
@@ -20,24 +20,40 @@ def get_session():
     finally:
         session.close()
 
-def get_current_user(
-    access_token: str | None = Cookie(default=None),
-    session: Session = Depends(get_session)
-) -> User:
-    if not access_token:
-        raise HTTPException(
-            status_code=401,
-            detail="Não autenticado"
+def get_user_from_token(token_type: str):
+
+    def dependency(
+        request: Request,
+        session: Session = Depends(get_session),
+    ) -> User:
+
+        token = request.cookies.get(f"{token_type}_token")
+
+        if not token:
+            raise HTTPException(
+                status_code=401,
+                detail="Não autenticado."
+            )
+
+        payload = decode_token(token)
+
+        if payload["type"] != token_type:
+            raise HTTPException(
+                status_code=401,
+                detail="Tipo de token inválido."
+            )
+
+        user = get_user_by_id(
+            int(payload["sub"]),
+            session
         )
 
-    user_id = decode_access_token(access_token)
+        if not user:
+            raise HTTPException(
+                status_code=404,
+                detail="Utilizador não encontrado."
+            )
 
-    user = get_user_by_id(int(user_id), session)
+        return user
 
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="Utilizador não encontrado."
-        )
-
-    return user
+    return dependency

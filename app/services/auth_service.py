@@ -2,10 +2,10 @@ from app.schemas import UserCreate, UserLogin
 from sqlalchemy.orm import Session
 from app.models import User
 from fastapi import HTTPException
-from app.repository import get_user_by_email, create
-from app.config import password_hash, SECRET_KEY, ACCESS_TOKEN_EXPIRE_MINUTES, ALGORITHM
-from datetime import datetime, timedelta, timezone
-import jwt
+from app.repository.user_repository import get_user_by_email, create_user
+from app.security import password_hash
+from app.security import setup_2fa, encrypt_secret_2fa, qrcode_generate
+
 
 def create_account(user: UserCreate, session: Session) -> User:
     with session.begin():
@@ -23,7 +23,7 @@ def create_account(user: UserCreate, session: Session) -> User:
             password=password_hash.hash(user.password)
         )
 
-        create(new_user, session)
+        create_user(new_user, session)
 
     session.refresh(new_user)
     return new_user
@@ -37,47 +37,13 @@ def authenticate_user(user: UserLogin, session: Session) -> User | None:
         return None
 
     return existing_user
-    
 
-def create_access_token(user: User) -> str:
-    now = datetime.now(timezone.utc)
 
-    payload = {
-        "sub": str(user.id),
-        "iat": now,
-        "exp": now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
-    }
+def create_2fa(user: User, session: Session):
+    uri, secret = setup_2fa(user)
 
-    token = jwt.encode(
-        payload=payload,
-        key=SECRET_KEY,
-        algorithm=ALGORITHM
-    )
+    secret = encrypt_secret_2fa(secret=secret)
+    user.secret_key_2fa = secret
+    session.commit()
 
-    return token
-
-def decode_access_token(token: str) -> str:
-    try:
-        payload = jwt.decode(
-            jwt=token,
-            algorithms=[ALGORITHM],
-            key=SECRET_KEY,
-            options={"require": ["sub", "exp"]}
-        )
-
-        return payload["sub"]
-    
-    except jwt.InvalidTokenError:
-        raise HTTPException(
-            status_code=401,
-            detail="Token inválido."
-        )
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(
-            status_code=401,
-            detail="Token expirado."
-        )
-    except Exception:
-        return {"mensagem": "Erro ao tentar decodificar"}
-
-    
+    return qrcode_generate(uri=uri)

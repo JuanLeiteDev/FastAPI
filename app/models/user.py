@@ -10,3 +10,5 @@ class User(Base):
     password: Mapped[str]
     status: Mapped[bool] = mapped_column(default=True)
     admin: Mapped[bool] = mapped_column(default=False)
+    security_2fa_active: Mapped[bool] = mapped_column(default=False, server_default="0")
+    secret_key_2fa: Mapped[str] = mapped_column(default=None, nullable=True)

@@ -10,7 +10,7 @@ def get_user_by_email(email: str, session: Session) -> User | None:
 def get_user_by_id(user_id: int, session: Session) -> User | None:
     return session.get(User, user_id)
 
-def create(user: User, session: Session):
+def create_user(user: User, session: Session):
     session.add(user)
     session.flush()
     return user
