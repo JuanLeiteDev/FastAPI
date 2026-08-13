@@ -12,6 +12,6 @@ def get_me(current_user: User = Depends(get_user_from_token("access"))) -> UserR
 @user_router.post("/Sair", status_code=200)
 def logout(response: Response, _: User = Depends(get_user_from_token("access"))): 
     response.delete_cookie("access_token")
-    response.delete_cookie("temporary_token")
+    response.delete_cookie("temporary_token", path="/Autenticar")
 
     return {"mensagem": "Logout feito com sucesso."}

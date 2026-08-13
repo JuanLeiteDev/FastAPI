@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="pt-PT">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Área de cliente com autenticação segura em dois fatores." />
+    <title>Lumen — Área de cliente</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Lumen — início">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32"><path d="M9 6v14.2c0 3.2 2.6 5.8 5.8 5.8H24"/><path d="M16 6v10.3c0 1.5 1.2 2.7 2.7 2.7H24"/></svg>
+        </span>
+        <span>Lumen</span>
+      </a>
+      <div class="api-indicator" title="Estado da ligação à API">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="api-status">A ligar à API</span>
+      </div>
+    </header>
+
+    <main class="page-shell">
+      <section class="intro-panel" aria-labelledby="intro-title">
+        <div class="eyebrow"><span></span> Espaço seguro</div>
+        <h1 id="intro-title">A sua conta,<br /><em>protegida.</em></h1>
+        <p class="intro-copy">Aceda aos seus dados com uma camada adicional de segurança. Simples por fora, robusto por dentro.</p>
+
+        <div class="security-card">
+          <div class="shield-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 3 5.5 5.7v5.5c0 4.2 2.7 8 6.5 9.3 3.8-1.3 6.5-5.1 6.5-9.3V5.7L12 3Z"/><path d="m9.2 11.8 1.8 1.8 3.9-4"/></svg>
+          </div>
+          <div><strong>Autenticação em dois fatores</strong><span>Compatível com Google Authenticator, Authy e outras aplicações TOTP.</span></div>
+        </div>
+
+        <div class="steps" aria-label="Etapas de autenticação">
+          <div class="step active" data-step="1"><span>1</span><div><strong>Identificação</strong><small>Os seus dados</small></div></div>
+          <div class="step-line"></div>
+          <div class="step" data-step="2"><span>2</span><div><strong>Verificação</strong><small>Código de segurança</small></div></div>
+          <div class="step-line"></div>
+          <div class="step" data-step="3"><span>3</span><div><strong>Conta</strong><small>Área pessoal</small></div></div>
+        </div>
+      </section>
+
+      <section class="auth-panel">
+        <div class="auth-card">
+          <div id="auth-view" class="view">
+            <div class="tabs" role="tablist" aria-label="Autenticação">
+              <button class="tab active" id="login-tab" role="tab" aria-selected="true" data-tab="login">Entrar</button>
+              <button class="tab" id="register-tab" role="tab" aria-selected="false" data-tab="register">Criar conta</button>
+            </div>
+
+            <div id="login-pane" class="tab-pane active" role="tabpanel" aria-labelledby="login-tab">
+              <div class="form-heading"><span class="mini-label">Bem-vindo de volta</span><h2>Entre na sua conta</h2><p>Use o email e a palavra-passe associados à sua conta.</p></div>
+              <form id="login-form" novalidate>
+                <label for="login-email">Email</label>
+                <div class="input-wrap">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16v11H4z"/><path d="m4.5 7 7.5 6 7.5-6"/></svg>
+                  <input id="login-email" type="email" autocomplete="email" placeholder="nome@exemplo.pt" required />
+                </div>
+                <label for="login-password">Palavra-passe</label>
+                <div class="input-wrap">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/></svg>
+                  <input id="login-password" type="password" autocomplete="current-password" placeholder="A sua palavra-passe" minlength="8" required />
+                  <button class="password-toggle" type="button" aria-label="Mostrar palavra-passe" data-target="login-password"></button>
+                </div>
+                <button class="primary-button" type="submit"><span>Continuar</span><svg viewBox="0 0 24 24"><path d="M5 12h14M14 7l5 5-5 5"/></svg></button>
+              </form>
+            </div>
+
+            <div id="register-pane" class="tab-pane" role="tabpanel" aria-labelledby="register-tab" hidden>
+              <div class="form-heading"><span class="mini-label">Comece agora</span><h2>Crie a sua conta</h2><p>Preencha os dados abaixo. Demora menos de um minuto.</p></div>
+              <form id="register-form" novalidate>
+                <label for="register-name">Nome completo</label>
+                <div class="input-wrap">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg>
+                  <input id="register-name" type="text" autocomplete="name" placeholder="O seu nome" minlength="3" maxlength="100" required />
+                </div>
+                <label for="register-email">Email</label>
+                <div class="input-wrap">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16v11H4z"/><path d="m4.5 7 7.5 6 7.5-6"/></svg>
+                  <input id="register-email" type="email" autocomplete="email" placeholder="nome@exemplo.pt" required />
+                </div>
+                <label for="register-password">Palavra-passe</label>
+                <div class="input-wrap">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/></svg>
+                  <input id="register-password" type="password" autocomplete="new-password" placeholder="Mínimo de 8 caracteres" minlength="8" maxlength="100" required />
+                  <button class="password-toggle" type="button" aria-label="Mostrar palavra-passe" data-target="register-password"></button>
+                </div>
+                <div class="password-meter"><span></span><span></span><span></span><small id="password-hint">Use 8 ou mais caracteres</small></div>
+                <button class="primary-button" type="submit"><span>Criar conta</span><svg viewBox="0 0 24 24"><path d="M5 12h14M14 7l5 5-5 5"/></svg></button>
+              </form>
+            </div>
+          </div>
+
+          <div id="two-factor-view" class="view" hidden>
+            <button class="back-button" type="button" id="back-to-login"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg> Voltar</button>
+            <div class="form-heading centered"><span class="verification-icon"><svg viewBox="0 0 24 24"><path d="M12 3 5.5 5.7v5.5c0 4.2 2.7 8 6.5 9.3 3.8-1.3 6.5-5.1 6.5-9.3V5.7L12 3Z"/><path d="M9 12h6M12 9v6"/></svg></span><span class="mini-label">Segundo fator</span><h2 id="two-factor-title">Proteja a sua conta</h2><p id="two-factor-description">Leia o QR Code com a sua aplicação autenticadora e insira o código gerado.</p></div>
+            <div id="qr-area" class="qr-area"><div class="qr-placeholder"><span></span></div><small>A preparar QR Code seguro…</small></div>
+            <form id="otp-form" novalidate>
+              <fieldset><legend>Código de 6 dígitos</legend><div class="otp-inputs" id="otp-inputs">
+                <input inputmode="numeric" autocomplete="one-time-code" maxlength="1" aria-label="Dígito 1" />
+                <input inputmode="numeric" maxlength="1" aria-label="Dígito 2" />
+                <input inputmode="numeric" maxlength="1" aria-label="Dígito 3" />
+                <input inputmode="numeric" maxlength="1" aria-label="Dígito 4" />
+                <input inputmode="numeric" maxlength="1" aria-label="Dígito 5" />
+                <input inputmode="numeric" maxlength="1" aria-label="Dígito 6" />
+              </div></fieldset>
+              <button class="primary-button" type="submit"><span>Verificar e entrar</span><svg viewBox="0 0 24 24"><path d="M5 12h14M14 7l5 5-5 5"/></svg></button>
+            </form>
+          </div>
+
+          <div id="account-view" class="view" hidden>
+            <div class="account-header"><div class="avatar" id="account-avatar">JL</div><div><span class="success-label"><i></i> Sessão ativa</span><h2 id="account-name">A sua conta</h2><p id="account-email">—</p></div></div>
+            <div class="account-grid">
+              <div class="data-card"><span>ID de utilizador</span><strong id="account-id">—</strong></div>
+              <div class="data-card"><span>Estado</span><strong id="account-status">—</strong></div>
+              <div class="data-card"><span>Tipo de conta</span><strong id="account-role">—</strong></div>
+              <div class="data-card"><span>Segurança 2FA</span><strong id="account-2fa">—</strong></div>
+            </div>
+            <div class="secure-note"><svg viewBox="0 0 24 24"><path d="M12 3 5.5 5.7v5.5c0 4.2 2.7 8 6.5 9.3 3.8-1.3 6.5-5.1 6.5-9.3V5.7L12 3Z"/><path d="m9.2 11.8 1.8 1.8 3.9-4"/></svg><div><strong>Conta protegida</strong><span>A autenticação em dois fatores está ativa.</span></div></div>
+            <button class="secondary-button" id="refresh-account" type="button"><svg viewBox="0 0 24 24"><path d="M20 7v5h-5"/><path d="M18.5 16a7 7 0 1 1 .5-7l1 3"/></svg> Atualizar dados</button>
+            <button class="logout-button" id="logout-button" type="button">Terminar sessão</button>
+          </div>
+        </div>
+        <p class="privacy-note"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/></svg> Os seus dados são transmitidos de forma segura e nunca são guardados neste dispositivo.</p>
+      </section>
+    </main>
+
+    <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>

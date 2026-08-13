@@ -39,7 +39,7 @@ def login(user: UserLogin, response: Response, session: Session = Depends(get_se
         "active": existing_user.security_2fa_active
     }
 
-@auth_router.post("/Confirmar2FA", status_code=200)
+@auth_router.post("/Confirmar2FA", status_code=200, response_model=UserResponse)
 def confirm_2fa(
     otp: str, 
     response: Response, 
@@ -59,7 +59,8 @@ def confirm_2fa(
     token = create_token(user, 15, "access")
 
     response.delete_cookie(
-        key="temporary_token"
+        key="temporary_token",
+        path="/Autenticar"
     )
     
     response.set_cookie(
@@ -72,7 +73,7 @@ def confirm_2fa(
         path="/"
     )
 
-    return {"mensagem": "Login feito com sucesso"}
+    return user
 
 
 @auth_router.post("/Ativar2FA", status_code=200)
