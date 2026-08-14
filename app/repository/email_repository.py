@@ -1,18 +1,18 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from app.models.email import TemporaryEmail
+from app.models.email import TemporaryEmailCode
 
-def create_email_repository(email: TemporaryEmail, session: Session):
-    existing_email = get_email_by_email(email.user_email, session)
-    if existing_email:
-        session.delete(existing_email)
+def create_temp_email(info: TemporaryEmailCode, session: Session):
+    existing_temp_email = get_email_by_user(info.user_email, session)
+    if existing_temp_email:
+        session.delete(existing_temp_email)
     
-    session.add(email)
+    session.add(info)
     session.commit()
-    return email
+    return info
 
-def get_email_by_email(email: str, session: Session) -> TemporaryEmail | None: 
+def get_email_by_user(user_email: str, session: Session) -> TemporaryEmailCode | None: 
     return session.scalar(
-        select(TemporaryEmail)
-        .where(TemporaryEmail.user_email == email)
+        select(TemporaryEmailCode)
+        .where(TemporaryEmailCode.user_email == user_email)
     )

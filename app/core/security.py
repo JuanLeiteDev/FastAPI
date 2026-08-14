@@ -1,30 +1,23 @@
 from pwdlib import PasswordHash
 from app.models.user import User
-from app.models.email import TemporaryEmail
+from app.models.email import TemporaryEmailCode
 from datetime import datetime, timezone, timedelta
-from fastapi import HTTPException
-from fastapi.responses import StreamingResponse
-from app.config import (
-    SECRET_KEY, 
-    SECRET_KEY_2FA, 
-    ALGORITHM, 
-    SALT, 
-    SMTP_FROM, 
-    SMTP_HOST, 
-    SMTP_PASSWORD, 
-    SMTP_PORT
+from secrets import randbelow
+from app.core.exceptions import (
+    TwoFactorAuthNotConfiguredError,
+    InvalidTwoFactorAuthCodeError
 )
+from fastapi.responses import StreamingResponse
+from app.core.config import settings
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
-from datetime import datetime
 
 import jwt
 import pyotp
 import base64
 import qrcode
 import io
-import aiosmtplib
 
 password_hash = PasswordHash.recommended()
 
@@ -36,25 +29,24 @@ def setup_2fa(user: User) -> str:
         issuer_name="FastAPI Security"
     )
 
+    secret = encrypt_message(secret)
+
     return uri, secret
 
 def validate_2fa(user: User, otp: str):
     ecrypted_secret = user.secret_key_2fa
     if not ecrypted_secret:
-        raise HTTPException(
-            status_code=401,
-            detail="Autenticação 2FA ainda não foi configurada."
-        )
+        raise TwoFactorAuthNotConfiguredError()
     
     decrypted_secret = decrypt_message(secret=ecrypted_secret)
     totp = pyotp.TOTP(decrypted_secret)
 
     if not totp.verify(otp=otp):
-        return False
+        raise InvalidTwoFactorAuthCodeError()
 
     return True
 
-def qrcode_generate(uri: str):
+def qrcode_generate_uri(uri: str):
     qr = qrcode.QRCode(
         version=1,
         box_size=10,
@@ -87,8 +79,8 @@ def decrypt_message(secret: str):
     return decryped.decode()
 
 def format_secret_2fa() -> bytes:
-    new_secret = SECRET_KEY_2FA.encode('utf-8')
-    salt = SALT.encode()
+    new_secret = settings.SECRET_KEY_2FA.encode('utf-8')
+    salt = settings.SALT.encode()
     
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
@@ -101,7 +93,7 @@ def format_secret_2fa() -> bytes:
     
     return new_secret
 
-def create_token(user: User, minutes: int, type: str) -> str:
+def create_token_jwt(user: User, minutes: int, type: str) -> str:
     now = datetime.now(timezone.utc)
 
     payload = {
@@ -113,41 +105,37 @@ def create_token(user: User, minutes: int, type: str) -> str:
 
     token = jwt.encode(
         payload=payload,
-        key=SECRET_KEY,
-        algorithm=ALGORITHM
+        key=settings.SECRET_KEY,
+        algorithm=settings.ALGORITHM
     )
 
     return token
 
-def decode_token(token: str) -> dict:
-    try:
-        return jwt.decode(
-            jwt=token,
-            key=SECRET_KEY,
-            algorithms=[ALGORITHM],
-            options={
-                "require": ["sub", "exp", "type"]
-            }
-        )
-
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(
-            status_code=401,
-            detail="Token expirado."
-        )
-
-    except jwt.InvalidTokenError:
-        raise HTTPException(
-            status_code=401,
-            detail="Token inválido."
-        )
+def decode_token_jwt(token: str) -> dict:
+    return jwt.decode(
+        jwt=token,
+        key=settings.SECRET_KEY,
+        algorithms=[settings.ALGORITHM],
+        options={
+            "require": ["sub", "exp", "type"]
+        }
+    )
 
 def configure_email() -> dict[str, str | None]:
     config = {
-        "hostname": SMTP_HOST,
-        "port": SMTP_PORT,
-        "username": SMTP_FROM,
-        "password": SMTP_PASSWORD,
+        "hostname": settings.SMTP_HOST,
+        "port": settings.SMTP_PORT,
+        "username": settings.SMTP_FROM,
+        "password": settings.SMTP_PASSWORD,
     }
 
     return config
+
+def generate_temporary_email(user: User) -> TemporaryEmailCode:
+    info = TemporaryEmailCode()
+    info.user_email = user.email
+    code = f"{randbelow(1000000):06d}"
+
+    info.temporary_code = encrypt_message(code)
+
+    return info, code

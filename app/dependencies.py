@@ -2,7 +2,7 @@
 from sqlalchemy.orm import sessionmaker, Session
 from fastapi import Request, Depends, HTTPException
 from app.models.user import User
-from app.security import decode_token
+from app.core.security import decode_token_jwt
 from app.repository.user_repository import get_user_by_id
 
 # 2. Importo o responsável por criar sessões e que já está ligado com minha base de dados
@@ -35,7 +35,7 @@ def get_user_from_token(token_type: str):
                 detail="Não autenticado."
             )
 
-        payload = decode_token(token)
+        payload = decode_token_jwt(token)
 
         if payload["type"] != token_type:
             raise HTTPException(

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Response, BackgroundTasks, HTTPException
 from sqlalchemy.orm import Session
 from app.schemas.user import UserResponse, UserCreate, UserLogin
-from app.schemas.email import EmailConfirm
+from app.schemas.email import EmailCodeConfirm
 from app.dependencies import get_session, get_user_from_token
 from app.services.auth_service import (
     create_account_service, 
@@ -9,14 +9,15 @@ from app.services.auth_service import (
     confirm_2fa_service, 
     active_security_2fa_service,
     send_email_service,
-    confirm_email_service
+    confirm_email_service,
+    creat_email
 )
 from app.models.user import User
-from app.repository.email_repository import get_email_by_email
+from app.repository.email_repository import get_email_by_user
 
 auth_router = APIRouter(prefix="/Autenticar", tags=["Autenticar"])
 
-@auth_router.post("/CriarConta", response_model=UserResponse, status_code=201)
+@auth_router.post("/CriarConta", status_code=201)
 async def create_account(user: UserCreate, session: Session = Depends(get_session)):
     return create_account_service(user, session)
 
@@ -48,26 +49,13 @@ async def active_security_2fa(
 
 
 
-@auth_router.post("/ConfirmarEmail", status_code=200, response_model=UserResponse)
+@auth_router.post("/ConfirmarEmail", status_code=200)
 async def confirm_email(
-    code: EmailConfirm,
+    code: EmailCodeConfirm,
     user: User = Depends(get_user_from_token("temporary")),
     session: Session = Depends(get_session)
 ):
-    if user.email_active:
-        raise HTTPException(
-            status_code=400,
-            detail="Email já confirmado."
-        )
-
-    existing_temp_email = get_email_by_email(user.email, session)
-    if not existing_temp_email:
-        raise HTTPException(
-            status_code=401,
-            detail="Não autenticado."
-        )
-    
-    return confirm_email_service(user, session, code)
+    return await confirm_email_service(user, session, code)
 
 @auth_router.post("/EnviarEmail", status_code=200)
 async def send_email(
@@ -75,13 +63,9 @@ async def send_email(
     user: User = Depends(get_user_from_token("temporary")),
     session: Session = Depends(get_session)
 ):
-    if user.email_active:
-        raise HTTPException(
-            status_code=400,
-            detail="Email já confirmado."
-        )
-        
-    background_task.add_task(send_email_service, user, session)
+
+    config, message = creat_email(user, session)   
+    background_task.add_task(send_email_service, config, message)
 
     return {"message": "Email colocado para envio."}
 
@@ -97,3 +81,5 @@ async def send_email(
 # Gerar 6 códigos caso não tenha mais acesso ao 2FA
 # Possibilidade de trocar 2FA
 # Apagar minha conta
+# Se acessar rota entrar porem já esta logado fazer algo
+# Quando acesso rotas do email e 2FA com access token ele diz não autenticado
