@@ -1,6 +1,5 @@
 from app.schemas.user import UserCreate, UserLogin
 from app.schemas.email import EmailCodeConfirm
-from app.schemas.recovery_code import RecoveryCodeCreate
 from sqlalchemy.orm import Session
 from app.models.user import User
 from fastapi import Response
@@ -11,7 +10,7 @@ from app.repository.email_repository import create_temp_email, get_email_by_user
 from app.repository.recovery_code_repository import (
     create_many_recovery_code,
     set_many_recovery_code,
-    valide_recovery_code
+    validate_recovery_code
 )
 from app.core.config import settings
 from app.core.exceptions import (
@@ -36,7 +35,6 @@ from app.core.security import (
     delete_all_jwt_token,
     set_token,
     generate_recovery_codes,
-    create_all_recovery_codes
 )
 
 import aiosmtplib
@@ -68,7 +66,13 @@ def login_service(user: UserLogin, session: Session, response: Response) -> User
 
     token = create_token_jwt(existing_user, settings.TEMPORARY_TOKEN_EXPIRE_MINUTES, "temporary")
 
-    set_token(response, "temporary_token", token, "/Autenticar")
+    set_token(
+        response,
+        "temporary_token",
+        token,
+        "/Autenticar",
+        settings.TEMPORARY_TOKEN_EXPIRE_MINUTES * 60,
+    )
 
     if not existing_user.email_active:
         mensagem = "Necessário confirmar email."
@@ -82,35 +86,46 @@ def login_service(user: UserLogin, session: Session, response: Response) -> User
     }
 
 def confirm_2fa_service(otp: str, response: Response, user: User, session: Session):
-    mensagem = {}
+    result = {}
+    otp = otp.strip().upper()
 
     if not user.email_active:
         raise EmailConfirmationRequiredError()
     
     if not validate_2fa(user, otp):
-        if not valide_recovery_code(otp, user.id, session):
-            raise InvalidTwoFactorAuthCodeError()            
+        if not user.security_2fa_active or not validate_recovery_code(otp, user.id, session):
+            raise InvalidTwoFactorAuthCodeError()
 
     if not user.security_2fa_active:
         codes = generate_recovery_codes()
-        hashes_codes = create_many_recovery_code(codes, user.id)
-        hashes_codes = set_many_recovery_code(hashes_codes, session)
-        session.refresh(hashes_codes)
+        recovery_codes = create_many_recovery_code(codes, user.id)
+        set_many_recovery_code(recovery_codes, session)
 
         user.security_2fa_active = True
-        session.commit()
-        mensagem["codigos"] = codes
+        result["codigos"] = codes
+
+    session.commit()
 
     delete_all_jwt_token(response)
 
     access_token = create_token_jwt(user, settings.ACCESS_TOKEN_EXPIRE_MINUTES, "access")
     refresh_token = create_token_jwt(user, settings.REFRESH_TOKEN_EXPIRE_MINUTES, "refresh")
 
-    set_token(response, "access_token", access_token)
-    set_token(response, "refresh_token", refresh_token)
+    set_token(
+        response,
+        "access_token",
+        access_token,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    )
+    set_token(
+        response,
+        "refresh_token",
+        refresh_token,
+        max_age=settings.REFRESH_TOKEN_EXPIRE_MINUTES * 60,
+    )
 
-    mensagem["usuario"] = user
-    return mensagem
+    result["usuario"] = user
+    return result
 
 def create_2fa(user: User, session: Session):
     uri, secret = setup_2fa(user)

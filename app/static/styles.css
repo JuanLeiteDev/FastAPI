@@ -94,6 +94,11 @@ input.invalid { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(161, 62,
 .qr-area img { width: 158px; height: 158px; padding: 7px; border: 1px solid var(--line); border-radius: 7px; object-fit: contain; }
 .qr-loading { width: 28px; height: 28px; border: 2px solid var(--line); border-top-color: var(--navy); border-radius: 50%; animation: spin .7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+.recovery-toggle { width: 100%; margin-top: 8px; }
+.one-time-note { margin: -7px 0 20px; padding: 12px 14px; color: #65551e; border: 1px solid #e5d8a6; background: #fbf8eb; border-radius: 7px; font-size: 11px; line-height: 1.5; }
+.recovery-code-list { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin: 0 0 20px; padding: 0; list-style: none; }
+.recovery-code-list li { padding: 10px; color: var(--navy); border: 1px solid var(--line); background: var(--canvas); border-radius: 6px; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 11px; font-weight: 650; letter-spacing: .04em; text-align: center; }
+.recovery-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 11px; }
 
 .account-heading { display: flex; align-items: center; gap: 15px; padding-bottom: 26px; border-bottom: 1px solid var(--line); }
 .avatar { display: grid; place-items: center; width: 54px; height: 54px; flex: 0 0 auto; color: white; background: var(--navy); border-radius: 8px; font-size: 17px; font-weight: 650; }
@@ -132,6 +137,7 @@ footer { width: min(1120px, calc(100% - 48px)); margin: -36px auto 0; color: #8a
   .context h1 { font-size: 34px; }
   .card { padding: 30px 22px; border-radius: 9px; }
   .account-actions { grid-template-columns: 1fr; }
+  .recovery-code-list, .recovery-actions { grid-template-columns: 1fr; }
   .text-button { order: 2; }
 }
 

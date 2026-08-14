@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, Response, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Response
 from sqlalchemy.orm import Session
 from app.schemas.user import UserResponse, UserCreate, UserLogin
 from app.schemas.email import EmailCodeConfirm
+from app.schemas.recovery_code import TwoFactorConfirmationResponse
 from app.dependencies import get_session, get_user_from_temporary
 from app.services.auth_service import (
     create_account_service, 
@@ -29,10 +30,14 @@ async def login(user: UserLogin, response: Response, session: Session = Depends(
 
 
 
-@auth_router.post("/Confirmar2FA", status_code=200, response_model=UserResponse)
+@auth_router.post(
+    "/Confirmar2FA",
+    status_code=200,
+    response_model=TwoFactorConfirmationResponse,
+)
 async def confirm_2fa(
-    otp: str, 
-    response: Response, 
+    response: Response,
+    otp: str = Query(pattern=r"^(?:\d{6}|[A-Fa-f0-9]{16})$"),
     user: User = Depends(get_user_from_temporary), 
     session: Session = Depends(get_session)
 ):

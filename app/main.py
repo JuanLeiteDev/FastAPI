@@ -113,6 +113,7 @@ def frontend():
 @app.get("/criar-conta", include_in_schema=False)
 @app.get("/confirmar-email", include_in_schema=False)
 @app.get("/confirmar-2fa", include_in_schema=False)
+@app.get("/codigos-recuperacao", include_in_schema=False)
 @app.get("/minha-conta", include_in_schema=False)
 def frontend_route():
     return FileResponse(frontend_dir / "index.html")

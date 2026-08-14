@@ -5,6 +5,7 @@ const ROUTES = {
   "register-view": "/criar-conta",
   "email-view": "/confirmar-email",
   "two-factor-view": "/confirmar-2fa",
+  "recovery-codes-view": "/codigos-recuperacao",
   "account-view": "/minha-conta",
 };
 
@@ -13,12 +14,16 @@ const TITLES = {
   "register-view": "Criar conta | Lumen",
   "email-view": "Confirmar email | Lumen",
   "two-factor-view": "Verificação de segurança | Lumen",
+  "recovery-codes-view": "Códigos de recuperação | Lumen",
   "account-view": "Minha conta | Lumen",
 };
 
 const state = {
   email: "",
   twoFactorConfigured: false,
+  usingRecoveryCode: false,
+  recoveryCodes: [],
+  pendingUser: null,
   qrUrl: null,
 };
 
@@ -86,6 +91,12 @@ function clearFlow() {
   state.email = "";
   state.twoFactorConfigured = false;
   sessionStorage.removeItem("lumen-auth-flow");
+}
+
+function clearRecoveryCodes() {
+  state.recoveryCodes = [];
+  state.pendingUser = null;
+  $("#recovery-code-list").replaceChildren();
 }
 
 function showView(id, { replace = false, updateHistory = true } = {}) {
@@ -164,6 +175,9 @@ async function enterTwoFactorStep(needsSetup) {
   showView("two-factor-view");
   $("#otp-code").value = "";
   const qrArea = $("#qr-area");
+  const recoveryToggle = $("#toggle-recovery-code");
+  setTwoFactorMode(false);
+  recoveryToggle.hidden = needsSetup;
 
   if (!needsSetup) {
     $("#two-factor-title").textContent = "Código de segurança";
@@ -190,6 +204,40 @@ async function enterTwoFactorStep(needsSetup) {
   } catch (error) {
     handleAuthError(error);
   }
+}
+
+function setTwoFactorMode(useRecoveryCode) {
+  state.usingRecoveryCode = useRecoveryCode;
+  const input = $("#otp-code");
+  const toggle = $("#toggle-recovery-code");
+
+  input.value = "";
+  input.classList.remove("invalid");
+  input.inputMode = useRecoveryCode ? "text" : "numeric";
+  input.placeholder = useRecoveryCode ? "A1B2C3D4E5F60708" : "000000";
+  input.minLength = useRecoveryCode ? 16 : 6;
+  input.maxLength = useRecoveryCode ? 16 : 6;
+  input.pattern = useRecoveryCode ? "[A-Fa-f0-9]{16}" : "[0-9]{6}";
+  $("#otp-label").textContent = useRecoveryCode ? "Código de recuperação" : "Código de 6 dígitos";
+  $("#two-factor-description").textContent = useRecoveryCode
+    ? "Introduza um dos códigos de recuperação que guardou."
+    : "Introduza o código da sua aplicação autenticadora.";
+  toggle.textContent = useRecoveryCode
+    ? "Usar aplicação autenticadora"
+    : "Usar código de recuperação";
+  input.focus();
+}
+
+function showRecoveryCodes(codes, user) {
+  state.recoveryCodes = [...codes];
+  state.pendingUser = user;
+  const list = $("#recovery-code-list");
+  list.replaceChildren(...codes.map((code) => {
+    const item = document.createElement("li");
+    item.textContent = code;
+    return item;
+  }));
+  showView("recovery-codes-view", { replace: true });
 }
 
 function renderAccount(user) {
@@ -327,8 +375,16 @@ $("#resend-email").addEventListener("click", async (event) => {
 });
 
 $$('.code-input').forEach((input) => input.addEventListener("input", (event) => {
+  if (event.target.id === "otp-code" && state.usingRecoveryCode) {
+    event.target.value = event.target.value.replace(/[^A-Fa-f0-9]/g, "").toUpperCase().slice(0, 16);
+    return;
+  }
   event.target.value = event.target.value.replace(/\D/g, "").slice(0, 6);
 }));
+
+$("#toggle-recovery-code").addEventListener("click", () => {
+  setTwoFactorMode(!state.usingRecoveryCode);
+});
 
 $("#otp-form").addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -338,9 +394,14 @@ $("#otp-form").addEventListener("submit", async (event) => {
 
   try {
     const otp = $("#otp-code").value;
-    const user = await api(`/Autenticar/Confirmar2FA?otp=${encodeURIComponent(otp)}`, { method: "POST" });
-    renderAccount(user);
-    toast("Sessão iniciada com segurança.");
+    const result = await api(`/Autenticar/Confirmar2FA?otp=${encodeURIComponent(otp)}`, { method: "POST" });
+    if (Array.isArray(result.codigos) && result.codigos.length) {
+      showRecoveryCodes(result.codigos, result.usuario);
+      toast("2FA ativado. Guarde os códigos de recuperação.");
+    } else {
+      renderAccount(result.usuario);
+      toast(state.usingRecoveryCode ? "Código de recuperação aceite." : "Sessão iniciada com segurança.");
+    }
   } catch (error) {
     $("#otp-code").value = "";
     $("#otp-code").classList.add("invalid");
@@ -349,6 +410,36 @@ $("#otp-form").addEventListener("submit", async (event) => {
   } finally {
     setBusy(form, false);
   }
+});
+
+$("#copy-recovery-codes").addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(state.recoveryCodes.join("\n"));
+    toast("Códigos copiados.");
+  } catch (_) {
+    toast("Não foi possível copiar. Utilize a opção de descarregar.", "error");
+  }
+});
+
+$("#download-recovery-codes").addEventListener("click", () => {
+  const content = [
+    "Lumen — Códigos de recuperação 2FA",
+    "Cada código pode ser utilizado uma única vez.",
+    "",
+    ...state.recoveryCodes,
+  ].join("\n");
+  const url = URL.createObjectURL(new Blob([content], { type: "text/plain;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "lumen-codigos-recuperacao.txt";
+  link.click();
+  URL.revokeObjectURL(url);
+});
+
+$("#finish-recovery-codes").addEventListener("click", () => {
+  const user = state.pendingUser;
+  clearRecoveryCodes();
+  if (user) renderAccount(user);
 });
 
 $("#refresh-account").addEventListener("click", () => loadAccount({ notify: true }));
@@ -371,7 +462,7 @@ $("#logout-button").addEventListener("click", async (event) => {
 
 window.addEventListener("popstate", async () => {
   const requestedView = viewFromPath(window.location.pathname) || "login-view";
-  if (requestedView === "account-view" && !(await loadAccount())) {
+  if (["account-view", "recovery-codes-view"].includes(requestedView) && !(await loadAccount())) {
     showView("login-view", { replace: true });
     return;
   }

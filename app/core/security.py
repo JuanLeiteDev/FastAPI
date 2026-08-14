@@ -42,10 +42,7 @@ def validate_2fa(user: User, otp: str):
     decrypted_secret = decrypt_message(secret=ecrypted_secret)
     totp = pyotp.TOTP(decrypted_secret)
 
-    if not totp.verify(otp=otp):
-        raise InvalidTwoFactorAuthCodeError()
-
-    return True
+    return totp.verify(otp=otp)
 
 def qrcode_generate_uri(uri: str):
     qr = qrcode.QRCode(
@@ -146,14 +143,20 @@ def delete_all_jwt_token(response: Response) -> Response:
     response.delete_cookie("refresh_token")
     response.delete_cookie("temporary_token", path="/Autenticar")
 
-def set_token(response: Response, key: str, value: str, path: str = "/"):
+def set_token(
+    response: Response,
+    key: str,
+    value: str,
+    path: str = "/",
+    max_age: int = 900,
+):
     response.set_cookie(
         key=key,
         value=value,
         httponly=True,
         secure=False,
         samesite="lax",
-        max_age=900,
+        max_age=max_age,
         path=path
     )
 

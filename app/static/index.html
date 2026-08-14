@@ -117,11 +117,29 @@
           <div id="qr-area" class="qr-area" hidden></div>
           <form id="otp-form" novalidate>
             <div class="field">
-              <label for="otp-code">Código de 6 dígitos</label>
+              <label id="otp-label" for="otp-code">Código de 6 dígitos</label>
               <input class="code-input" id="otp-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="000000" minlength="6" maxlength="6" pattern="[0-9]{6}" required />
             </div>
             <button class="button primary" type="submit"><span>Confirmar e entrar</span></button>
           </form>
+          <button class="button text-button recovery-toggle" id="toggle-recovery-code" type="button" hidden>Usar código de recuperação</button>
+        </div>
+
+        <div id="recovery-codes-view" class="view" hidden>
+          <div class="view-heading">
+            <p class="step-label">Segurança concluída</p>
+            <h2>Guarde os seus códigos</h2>
+            <p>Cada código permite recuperar o acesso uma única vez.</p>
+          </div>
+          <div class="one-time-note" role="note">
+            Estes códigos só serão apresentados agora. Guarde-os num local seguro.
+          </div>
+          <ol class="recovery-code-list" id="recovery-code-list" aria-label="Códigos de recuperação"></ol>
+          <div class="recovery-actions">
+            <button class="button secondary" id="copy-recovery-codes" type="button">Copiar códigos</button>
+            <button class="button secondary" id="download-recovery-codes" type="button">Descarregar</button>
+          </div>
+          <button class="button primary" id="finish-recovery-codes" type="button"><span>Já guardei os códigos</span></button>
         </div>
 
         <div id="account-view" class="view" hidden>

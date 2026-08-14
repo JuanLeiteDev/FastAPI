@@ -124,7 +124,8 @@ def refresh_access(
     set_token(
         response,
         "access_token",
-        new_access_token
+        new_access_token,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
 
     return user

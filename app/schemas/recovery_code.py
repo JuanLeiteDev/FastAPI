@@ -1,6 +1,8 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-class RecoveryCodeCreate(BaseModel):
-    hash_code: str = Field(max_length=16, min_length=16)
-    user_id: int
-    
+from app.schemas.user import UserResponse
+
+
+class TwoFactorConfirmationResponse(BaseModel):
+    usuario: UserResponse
+    codigos: list[str] | None = None
