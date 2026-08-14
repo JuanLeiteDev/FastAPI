@@ -12,7 +12,10 @@ from app.core.exceptions import (
     TwoFactorAuthAlreadyConfiguredError,
     EmailAlreadyConfirmedError,
     InvalidEmailConfirmationCodeError,
-    ExpiredEmailConfirmationCodeError
+    ExpiredEmailConfirmationCodeError,
+    InvalidJwtTokenError,
+    ExpiredJwtTokenError,
+    UnauthenticatedError
 )
 
 async def user_not_found_handler(
@@ -54,14 +57,6 @@ async def invalid_jwt_token_handler(
     return JSONResponse(
         status_code=401,
         content={"detail": "Token inválido."}
-    )
-async def expired_jwt_token_handler(
-    request: Request,
-    exc: ExpiredSignatureError
-):
-    return JSONResponse(
-        status_code=401,
-        content={"detail": "Token expirado."}
     )
 async def invalid_email_password_handler(
     request: Request,
@@ -110,4 +105,28 @@ async def expired_email_code_handler(
     return JSONResponse(
         status_code=401,
         content={"detail": "Código expirado."}
+    )
+async def invalid_jwt_token_handler(
+    request: Request,
+    exc: InvalidJwtTokenError
+):
+    return JSONResponse(
+        status_code=401,
+        content={"detail": "Token inválido."}
+    )
+async def expired_jwt_token_handler(
+    request: Request,
+    exc: ExpiredJwtTokenError
+):
+    return JSONResponse(
+        status_code=401,
+        content={"detail": "Token expirado."}
+    )
+async def unauthenticated_handler(
+    request: Request,
+    exc: UnauthenticatedError
+):
+    return JSONResponse(
+        status_code=401,
+        content={"detail": "Não autenticado."}
     )

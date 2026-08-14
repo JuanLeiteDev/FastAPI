@@ -52,11 +52,6 @@ app.add_exception_handler(
 )
 
 app.add_exception_handler(
-    ha.ExpiredSignatureError,
-    ha.expired_jwt_token_handler
-)
-
-app.add_exception_handler(
     ha.InvalidEmailOrPasswordError,
     ha.invalid_email_password_handler
 )
@@ -84,6 +79,21 @@ app.add_exception_handler(
 app.add_exception_handler(
     ha.ExpiredEmailConfirmationCodeError,
     ha.expired_email_code_handler
+)
+
+app.add_exception_handler(
+    ha.InvalidJwtTokenError,
+    ha.invalid_jwt_token_handler
+)
+
+app.add_exception_handler(
+    ha.ExpiredJwtTokenError,
+    ha.expired_jwt_token_handler
+)
+
+app.add_exception_handler(
+    ha.UnauthenticatedError,
+    ha.unauthenticated_handler
 )
 
 # O frontend e a API compartilham a mesma origem. Isso permite que os cookies

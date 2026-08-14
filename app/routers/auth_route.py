@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Response, BackgroundTasks, HTTPException
 from sqlalchemy.orm import Session
 from app.schemas.user import UserResponse, UserCreate, UserLogin
 from app.schemas.email import EmailCodeConfirm
-from app.dependencies import get_session, get_user_from_token
+from app.dependencies import get_session, get_user_from_temporary
 from app.services.auth_service import (
     create_account_service, 
     login_service, 
@@ -33,7 +33,7 @@ async def login(user: UserLogin, response: Response, session: Session = Depends(
 async def confirm_2fa(
     otp: str, 
     response: Response, 
-    user: User = Depends(get_user_from_token("temporary")), 
+    user: User = Depends(get_user_from_temporary), 
     session: Session = Depends(get_session)
 ):
     return confirm_2fa_service(otp, response, user, session)
@@ -42,7 +42,7 @@ async def confirm_2fa(
 
 @auth_router.post("/Ativar2FA", status_code=200)
 async def active_security_2fa(
-    user: User = Depends(get_user_from_token("temporary")), 
+    user: User = Depends(get_user_from_temporary), 
     session: Session = Depends(get_session)
 ):
     return active_security_2fa_service(user, session)
@@ -52,7 +52,7 @@ async def active_security_2fa(
 @auth_router.post("/ConfirmarEmail", status_code=200)
 async def confirm_email(
     code: EmailCodeConfirm,
-    user: User = Depends(get_user_from_token("temporary")),
+    user: User = Depends(get_user_from_temporary),
     session: Session = Depends(get_session)
 ):
     return await confirm_email_service(user, session, code)
@@ -60,7 +60,7 @@ async def confirm_email(
 @auth_router.post("/EnviarEmail", status_code=200)
 async def send_email(
     background_task: BackgroundTasks,
-    user: User = Depends(get_user_from_token("temporary")),
+    user: User = Depends(get_user_from_temporary),
     session: Session = Depends(get_session)
 ):
 
@@ -74,12 +74,8 @@ async def send_email(
 # rate limit
 # Validade dos tokens
 # Verificar status de administrador
-# Verificar email confirmado
 # otp em json
 # Concorrência
 # Esqueci minha senha
 # Gerar 6 códigos caso não tenha mais acesso ao 2FA
-# Possibilidade de trocar 2FA
 # Apagar minha conta
-# Se acessar rota entrar porem já esta logado fazer algo
-# Quando acesso rotas do email e 2FA com access token ele diz não autenticado

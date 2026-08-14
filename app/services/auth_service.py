@@ -4,9 +4,10 @@ from sqlalchemy.orm import Session
 from app.models.user import User
 from fastapi import Response
 from email.message import EmailMessage
-from datetime import datetime
+from datetime import datetime, timezone
 from app.repository.user_repository import get_user_by_email, create_user
 from app.repository.email_repository import create_temp_email, get_email_by_user
+from app.core.config import settings
 from app.core.exceptions import (
     UserAlreadyExistsError,
     InvalidEmailOrPasswordError,
@@ -25,7 +26,9 @@ from app.core.security import (
     decrypt_message,
     generate_temporary_email,
     qrcode_generate_uri,
-    create_token_jwt
+    create_token_jwt,
+    delete_all_jwt_token,
+    set_token
 )
 
 import aiosmtplib
@@ -53,17 +56,11 @@ def login_service(user: UserLogin, session: Session, response: Response) -> User
     if not existing_user or (not password_hash.verify(user.password, existing_user.password)):
         raise InvalidEmailOrPasswordError()     
 
-    token = create_token_jwt(existing_user, 5, "temporary")
+    delete_all_jwt_token(response)
 
-    response.set_cookie(
-        key="temporary_token",
-        value=token,
-        httponly=True,
-        secure=False,
-        samesite="lax",
-        max_age=900,
-        path="/Autenticar"
-    )
+    token = create_token_jwt(existing_user, settings.TEMPORARY_TOKEN_EXPIRE_MINUTES, "temporary")
+
+    set_token(response, "temporary_token", token, "/Autenticar")
 
     if not existing_user.email_active:
         mensagem = "Necessário confirmar email."
@@ -87,22 +84,13 @@ def confirm_2fa_service(otp: str, response: Response, user: User, session: Sessi
         user.security_2fa_active = True
         session.commit()
 
-    token = create_token_jwt(user, 15, "access")
+    delete_all_jwt_token(response)
 
-    response.delete_cookie(
-        key="temporary_token",
-        path="/Autenticar"
-    )
-    
-    response.set_cookie(
-        key="access_token",
-        value=token,
-        httponly=True,
-        secure=False,
-        samesite="lax",
-        max_age=900,
-        path="/"
-    )
+    access_token = create_token_jwt(user, settings.ACCESS_TOKEN_EXPIRE_MINUTES, "access")
+    refresh_token = create_token_jwt(user, settings.REFRESH_TOKEN_EXPIRE_MINUTES, "refresh")
+
+    set_token(response, "access_token", access_token)
+    set_token(response, "refresh_token", refresh_token)
 
     return user
 
@@ -168,7 +156,7 @@ async def confirm_email_service(user: User, session: Session, code: EmailCodeCon
     if existing_code != code.temporary_code:
         raise InvalidEmailConfirmationCodeError()
 
-    if existing_temp_email.exp < datetime.now():
+    if existing_temp_email.exp < datetime.now(timezone.utc):
         raise ExpiredEmailConfirmationCodeError()
 
     user.email_active = True

@@ -27,3 +27,12 @@ class InvalidEmailConfirmationCodeError(Exception):
 
 class ExpiredEmailConfirmationCodeError(Exception):
     pass
+
+class InvalidJwtTokenError(Exception):
+    pass
+
+class ExpiredJwtTokenError(Exception):
+    pass
+
+class UnauthenticatedError(Exception):
+    pass

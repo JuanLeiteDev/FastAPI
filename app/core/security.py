@@ -8,6 +8,7 @@ from app.core.exceptions import (
     InvalidTwoFactorAuthCodeError
 )
 from fastapi.responses import StreamingResponse
+from fastapi import Response
 from app.core.config import settings
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
@@ -139,3 +140,19 @@ def generate_temporary_email(user: User) -> TemporaryEmailCode:
     info.temporary_code = encrypt_message(code)
 
     return info, code
+
+def delete_all_jwt_token(response: Response) -> Response:
+    response.delete_cookie("access_token")
+    response.delete_cookie("refresh_token")
+    response.delete_cookie("temporary_token", path="/Autenticar")
+
+def set_token(response: Response, key: str, value: str, path: str = "/"):
+    response.set_cookie(
+        key=key,
+        value=value,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=900,
+        path=path
+    )

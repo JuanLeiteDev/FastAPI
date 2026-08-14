@@ -1,9 +1,19 @@
 # 1. Importo o criador de sessão
 from sqlalchemy.orm import sessionmaker, Session
-from fastapi import Request, Depends, HTTPException
+from fastapi import Request, Depends, Response, HTTPException
+from app.core.config import settings
 from app.models.user import User
-from app.core.security import decode_token_jwt
+from app.core.security import decode_token_jwt, create_token_jwt, set_token
 from app.repository.user_repository import get_user_by_id
+from datetime import datetime, timezone
+from app.core.exceptions import (
+    InvalidJwtTokenError, 
+    ExpiredJwtTokenError, 
+    UserNotFoundError,
+    UnauthenticatedError
+)
+
+import jwt
 
 # 2. Importo o responsável por criar sessões e que já está ligado com minha base de dados
 from app.database.db import db_engine
@@ -20,40 +30,102 @@ def get_session():
     finally:
         session.close()
 
-def get_user_from_token(token_type: str):
+def get_user_from_temporary(
+    request: Request,
+    session: Session = Depends(get_session),   
+) -> User:
 
-    def dependency(
-        request: Request,
-        session: Session = Depends(get_session),
-    ) -> User:
+    token = request.cookies.get("temporary_token")
 
-        token = request.cookies.get(f"{token_type}_token")
+    if not token:
+        raise UnauthenticatedError()
 
-        if not token:
-            raise HTTPException(
-                status_code=401,
-                detail="Não autenticado."
-            )
-
+    try:
         payload = decode_token_jwt(token)
-
-        if payload["type"] != token_type:
-            raise HTTPException(
-                status_code=401,
-                detail="Tipo de token inválido."
-            )
-
-        user = get_user_by_id(
-            int(payload["sub"]),
-            session
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=401,
+            detail="Token expirado."
         )
 
-        if not user:
-            raise HTTPException(
-                status_code=404,
-                detail="Utilizador não encontrado."
-            )
+    if payload["type"] != "temporary":
+        raise InvalidJwtTokenError()
 
-        return user
+    user = get_user_by_id(
+        int(payload["sub"]),
+        session
+    )
 
-    return dependency
+    if not user:
+        raise UserNotFoundError()
+
+    return user
+
+
+def get_user_from_access(
+    response: Response,
+    request: Request,
+    session: Session = Depends(get_session),   
+) -> User:
+
+    access_token = request.cookies.get("access_token")
+
+    if not access_token:
+        raise UnauthenticatedError()
+
+    try:
+        payload = decode_token_jwt(access_token)
+
+    except jwt.ExpiredSignatureError:
+        return refresh_access(response, request, session)
+
+    if payload["type"] != "access":
+        raise InvalidJwtTokenError()
+
+    user = get_user_by_id(
+        int(payload["sub"]),
+        session
+    )
+
+    if not user:
+        raise UserNotFoundError()
+
+    return user
+
+def refresh_access(
+    response: Response,
+    request: Request,
+    session: Session
+) -> User:
+
+    refresh_token = request.cookies.get("refresh_token")
+
+    if not refresh_token:
+        raise ExpiredJwtTokenError()
+
+    refresh_payload = decode_token_jwt(refresh_token)
+
+    if refresh_payload["type"] != "refresh":
+        raise InvalidJwtTokenError()
+
+    user = get_user_by_id(
+        int(refresh_payload["sub"]),
+        session
+    )
+
+    if not user:
+        raise UserNotFoundError()
+
+    new_access_token = create_token_jwt(
+        user,
+        settings.ACCESS_TOKEN_EXPIRE_MINUTES,
+        "access"
+    )
+
+    set_token(
+        response,
+        "access_token",
+        new_access_token
+    )
+
+    return user
