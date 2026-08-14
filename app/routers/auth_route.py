@@ -69,10 +69,8 @@ async def send_email(
 
     return {"message": "Email colocado para envio."}
 
-# Refresh Token
 # Adicionar secure=True aos tokens
 # rate limit
-# Validade dos tokens
 # Verificar status de administrador
 # otp em json
 # Concorrência

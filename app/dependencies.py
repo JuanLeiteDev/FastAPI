@@ -1,11 +1,11 @@
 # 1. Importo o criador de sessão
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session
+from app.database.db import SessionLocal
 from fastapi import Request, Depends, Response, HTTPException
 from app.core.config import settings
 from app.models.user import User
 from app.core.security import decode_token_jwt, create_token_jwt, set_token
 from app.repository.user_repository import get_user_by_id
-from datetime import datetime, timezone
 from app.core.exceptions import (
     InvalidJwtTokenError, 
     ExpiredJwtTokenError, 
@@ -23,8 +23,7 @@ def get_session():
     Função responsável por criar sessão e retornar usando o yield para no fim poder fechar a sessão de forma segura
     """
     try:
-        Session = sessionmaker(db_engine)
-        session = Session()
+        session = SessionLocal()
 
         yield session
     finally:

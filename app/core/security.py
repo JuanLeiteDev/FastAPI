@@ -2,7 +2,7 @@ from pwdlib import PasswordHash
 from app.models.user import User
 from app.models.email import TemporaryEmailCode
 from datetime import datetime, timezone, timedelta
-from secrets import randbelow
+from secrets import randbelow, token_hex
 from app.core.exceptions import (
     TwoFactorAuthNotConfiguredError,
     InvalidTwoFactorAuthCodeError
@@ -156,3 +156,6 @@ def set_token(response: Response, key: str, value: str, path: str = "/"):
         max_age=900,
         path=path
     )
+
+def generate_recovery_codes() -> list[str]:
+    return [token_hex(8).upper() for _ in range(6)]

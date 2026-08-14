@@ -1,5 +1,6 @@
 from app.schemas.user import UserCreate, UserLogin
 from app.schemas.email import EmailCodeConfirm
+from app.schemas.recovery_code import RecoveryCodeCreate
 from sqlalchemy.orm import Session
 from app.models.user import User
 from fastapi import Response
@@ -7,6 +8,11 @@ from email.message import EmailMessage
 from datetime import datetime, timezone
 from app.repository.user_repository import get_user_by_email, create_user
 from app.repository.email_repository import create_temp_email, get_email_by_user
+from app.repository.recovery_code_repository import (
+    create_many_recovery_code,
+    set_many_recovery_code,
+    valide_recovery_code
+)
 from app.core.config import settings
 from app.core.exceptions import (
     UserAlreadyExistsError,
@@ -28,7 +34,9 @@ from app.core.security import (
     qrcode_generate_uri,
     create_token_jwt,
     delete_all_jwt_token,
-    set_token
+    set_token,
+    generate_recovery_codes,
+    create_all_recovery_codes
 )
 
 import aiosmtplib
@@ -74,15 +82,24 @@ def login_service(user: UserLogin, session: Session, response: Response) -> User
     }
 
 def confirm_2fa_service(otp: str, response: Response, user: User, session: Session):
+    mensagem = {}
+
     if not user.email_active:
         raise EmailConfirmationRequiredError()
     
     if not validate_2fa(user, otp):
-        raise InvalidTwoFactorAuthCodeError()
+        if not valide_recovery_code(otp, user.id, session):
+            raise InvalidTwoFactorAuthCodeError()            
 
     if not user.security_2fa_active:
+        codes = generate_recovery_codes()
+        hashes_codes = create_many_recovery_code(codes, user.id)
+        hashes_codes = set_many_recovery_code(hashes_codes, session)
+        session.refresh(hashes_codes)
+
         user.security_2fa_active = True
         session.commit()
+        mensagem["codigos"] = codes
 
     delete_all_jwt_token(response)
 
@@ -92,7 +109,8 @@ def confirm_2fa_service(otp: str, response: Response, user: User, session: Sessi
     set_token(response, "access_token", access_token)
     set_token(response, "refresh_token", refresh_token)
 
-    return user
+    mensagem["usuario"] = user
+    return mensagem
 
 def create_2fa(user: User, session: Session):
     uri, secret = setup_2fa(user)
