@@ -16,7 +16,6 @@ from app.core.exceptions import (
 import jwt
 
 # 2. Importo o responsável por criar sessões e que já está ligado com minha base de dados
-from app.database.db import db_engine
 
 def get_session():
     """

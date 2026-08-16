@@ -1,6 +1,6 @@
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from jwt import InvalidTokenError, ExpiredSignatureError
+from jwt import InvalidTokenError
 
 from app.core.exceptions import (
     UserNotFoundError,

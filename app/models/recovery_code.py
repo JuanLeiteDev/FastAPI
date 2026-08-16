@@ -17,7 +17,7 @@ class RecoveryCode(Base):
         index=True,
         nullable=False,
     )
-    hash_code: Mapped[str] = mapped_column(String(255), nullable=False)
+    hash_code: Mapped[str] = mapped_column(nullable=False)
     used: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
