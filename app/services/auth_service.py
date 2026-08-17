@@ -11,6 +11,10 @@ from app.repository.email_repository import (
     get_email_by_user, 
     delete_temporary_email
 )
+from app.repository.password_recovery_repository import (
+    add_password_recovery,
+    delete_all_password_recovery
+)
 from app.repository.recovery_code_repository import (
     create_many_recovery_code,
     set_many_recovery_code,
@@ -25,7 +29,8 @@ from app.core.exceptions import (
     InvalidTwoFactorAuthCodeError,
     EmailAlreadyConfirmedError, 
     InvalidEmailConfirmationCodeError,
-    ExpiredEmailConfirmationCodeError
+    ExpiredEmailConfirmationCodeError,
+    UserNotFoundError
 )
 from app.core.security import (
     password_hash, 
@@ -39,6 +44,8 @@ from app.core.security import (
     delete_all_jwt_token,
     set_token,
     generate_recovery_codes,
+    generate_strong_token,
+    generate_hash_sha256
 )
 
 import aiosmtplib
@@ -166,8 +173,6 @@ def creat_email(user: User, session: Session):
 
     
 async def send_email_service(config, message):
-    config = configure_email()
-    
     await aiosmtplib.send(
         message,
         hostname=config["hostname"],
@@ -201,3 +206,35 @@ async def confirm_email_service(user: User, session: Session, code: EmailCodeCon
     session.commit()
     session.refresh(user)
     return {"mensagem": "Email confirmado."}
+
+def password_recovery_service(email: str, response: Response, session: Session):
+    user = get_user_by_email(email, session)
+    if not user:
+        raise UserNotFoundError()
+
+    token = generate_strong_token(32)
+    token_hash = generate_hash_sha256(token)
+
+    delete_all_password_recovery(email, session)
+    add_password_recovery(email, token_hash, session)
+
+    link = f"http://127.0.0.1:8000/ReporSenha?email={email}&token={token}"
+
+    content = f"""
+        <p>Olá,</p>
+        <p>Acesse o <a href="{link}">Fast API repor senha</a> clicando no link.</p>
+        """
+
+    config, message = create_generic_email(email, content)
+    send_email_service(config, message)
+
+def create_generic_email(to: str, content: str):
+    config = configure_email()
+    message = EmailMessage()
+
+    message["From"] = config["username"]
+    message["To"] = to
+    message["Subject"] = "FastAPI | Código de confirmação | 5 Minutos"
+    message.set_content(content)
+
+    return config, message

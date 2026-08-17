@@ -6,6 +6,10 @@ from app.schemas.recovery_code import (
     TwoFactorConfirmationRequest,
     TwoFactorConfirmationResponse,
 )
+from app.schemas.password_recovery import (
+    PasswordRecoveryRequest,
+    PasswordRecoveryResponse
+)
 from app.dependencies import get_session, get_user_from_temporary
 from app.services.auth_service import (
     create_account_service, 
@@ -14,7 +18,8 @@ from app.services.auth_service import (
     active_security_2fa_service,
     send_email_service,
     confirm_email_service,
-    creat_email
+    creat_email,
+    password_recovery_service
 )
 from app.models.user import User
 from app.repository.email_repository import get_email_by_user
@@ -76,6 +81,14 @@ async def send_email(
     background_task.add_task(send_email_service, config, message)
 
     return {"message": "Email colocado para envio."}
+
+@auth_router.post("/EsqueciMinhaSenha")
+def password_recovery_route(
+    email_scheme: PasswordRecoveryRequest,
+    response: Response,
+    session: Session = Depends(get_session)
+):
+    return password_recovery_service(email_scheme.email, response, session)
 
 # Adicionar secure=True aos tokens
 # rate limit

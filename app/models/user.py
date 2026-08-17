@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from app.models.recovery_code import RecoveryCode
 
 class User(Base):
-    __tablename__ = "users"
+    __tablename__ = "Users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str]
@@ -21,4 +21,5 @@ class User(Base):
     recovery_codes: Mapped[list["RecoveryCode"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
+        passive_deletes=True
     )

@@ -2,10 +2,10 @@ from pwdlib import PasswordHash
 from app.models.user import User
 from app.models.email import TemporaryEmailCode
 from datetime import datetime, timezone, timedelta
-from secrets import randbelow, token_hex
+from secrets import randbelow, token_hex, token_urlsafe
+from hashlib import sha256
 from app.core.exceptions import (
     TwoFactorAuthNotConfiguredError,
-    InvalidTwoFactorAuthCodeError
 )
 from fastapi.responses import StreamingResponse
 from fastapi import Response
@@ -162,3 +162,9 @@ def set_token(
 
 def generate_recovery_codes() -> list[str]:
     return [token_hex(8).upper() for _ in range(6)]
+
+def generate_strong_token(bytes: int) -> str:
+    return token_urlsafe(bytes)
+
+def generate_hash_sha256(data: str) -> str:
+    return sha256(data)

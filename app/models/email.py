@@ -4,10 +4,10 @@ from app.database.db import Base
 from datetime import datetime, timedelta, timezone
 
 class TemporaryEmailCode(Base):
-    __tablename__ = "temp_email_code"
+    __tablename__ = "TemporaryEmailCode"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_email: Mapped[str] = mapped_column(ForeignKey("users.email"))
+    user_email: Mapped[str] = mapped_column(ForeignKey("Users.email", ondelete="CASCADE"))
     temporary_code: Mapped[str | None] = mapped_column(default=None, nullable=True)
     exp: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
