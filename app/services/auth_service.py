@@ -174,7 +174,7 @@ async def send_email_service(config, message):
         port=config["port"],
         username=config["username"],
         password=config["password"],
-        use_tls=True,
+        start_tls=True,
         validate_certs=False
     )
 
