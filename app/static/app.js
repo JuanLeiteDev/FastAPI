@@ -403,7 +403,10 @@ $("#otp-form").addEventListener("submit", async (event) => {
 
   try {
     const otp = $("#otp-code").value;
-    const result = await api(`/Autenticar/Confirmar2FA?otp=${encodeURIComponent(otp)}`, { method: "POST" });
+    const result = await api("/Autenticar/Confirmar2FA", {
+      method: "POST",
+      body: JSON.stringify({ otp }),
+    });
     if (Array.isArray(result.codigos) && result.codigos.length) {
       showRecoveryCodes(result.codigos, result.usuario);
       toast("2FA ativado. Guarde os códigos de recuperação.");

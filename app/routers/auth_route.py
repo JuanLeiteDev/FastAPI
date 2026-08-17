@@ -1,8 +1,11 @@
-from fastapi import APIRouter, BackgroundTasks, Depends, Query, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, Response
 from sqlalchemy.orm import Session
 from app.schemas.user import UserResponse, UserCreate, UserLogin
 from app.schemas.email import EmailCodeConfirm
-from app.schemas.recovery_code import TwoFactorConfirmationResponse
+from app.schemas.recovery_code import (
+    TwoFactorConfirmationRequest,
+    TwoFactorConfirmationResponse,
+)
 from app.dependencies import get_session, get_user_from_temporary
 from app.services.auth_service import (
     create_account_service, 
@@ -36,12 +39,12 @@ async def login(user: UserLogin, response: Response, session: Session = Depends(
     response_model=TwoFactorConfirmationResponse,
 )
 async def confirm_2fa(
+    confirmation: TwoFactorConfirmationRequest,
     response: Response,
-    otp: str = Query(pattern=r"^(?:\d{6}|[A-Fa-f0-9]{16})$"),
     user: User = Depends(get_user_from_temporary), 
     session: Session = Depends(get_session)
 ):
-    return confirm_2fa_service(otp, response, user, session)
+    return confirm_2fa_service(confirmation.otp, response, user, session)
 
 
 
@@ -77,8 +80,6 @@ async def send_email(
 # Adicionar secure=True aos tokens
 # rate limit
 # Verificar status de administrador
-# otp em json
 # Concorrência
 # Esqueci minha senha
-# Gerar 6 códigos caso não tenha mais acesso ao 2FA
 # Apagar minha conta

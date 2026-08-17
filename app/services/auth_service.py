@@ -91,7 +91,6 @@ def login_service(user: UserLogin, session: Session, response: Response) -> User
 
 def confirm_2fa_service(otp: str, response: Response, user: User, session: Session):
     result = {}
-    otp = otp.strip().upper()
 
     if not user.email_active:
         raise EmailConfirmationRequiredError()
