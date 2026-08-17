@@ -6,7 +6,11 @@ from fastapi import Response
 from email.message import EmailMessage
 from datetime import datetime, timezone
 from app.repository.user_repository import get_user_by_email, create_user
-from app.repository.email_repository import create_temp_email, get_email_by_user
+from app.repository.email_repository import (
+    create_temp_email, 
+    get_email_by_user, 
+    delete_temporary_email
+)
 from app.repository.recovery_code_repository import (
     create_many_recovery_code,
     set_many_recovery_code,
@@ -193,6 +197,8 @@ async def confirm_email_service(user: User, session: Session, code: EmailCodeCon
         raise ExpiredEmailConfirmationCodeError()
 
     user.email_active = True
+    if delete_temporary_email(user.email, session):
+        print("ok")
     session.commit()
     session.refresh(user)
     return {"mensagem": "Email confirmado."}

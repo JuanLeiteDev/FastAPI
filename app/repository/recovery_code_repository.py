@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.orm import Session
 
 from app.core.security import password_hash
@@ -29,15 +29,21 @@ def validate_recovery_code(code: str, user_id: int, session: Session) -> bool:
         select(RecoveryCode)
         .where(
             RecoveryCode.user_id == user_id,
-            RecoveryCode.used.is_(False),
         )
-        .with_for_update()
     ).all()
 
     for recovery_code in recovery_codes:
         if password_hash.verify(code, recovery_code.hash_code):
-            recovery_code.used = True
+            session.delete(recovery_code)
+
             session.flush()
             return True
 
     return False
+
+def delete_recovery_code(code: RecoveryCode, session: Session) -> bool:
+    result = session.execute(
+        delete(code)
+    )
+
+    return result.rowcount > 0

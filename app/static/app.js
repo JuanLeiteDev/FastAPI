@@ -1,4 +1,6 @@
 const API_BASE = window.location.port === "5500" ? "http://127.0.0.1:8000" : window.location.origin;
+const OTP_CODE_LENGTH = 6;
+const RECOVERY_CODE_LENGTH = 16;
 
 const ROUTES = {
   "login-view": "/entrar",
@@ -215,9 +217,13 @@ function setTwoFactorMode(useRecoveryCode) {
   input.classList.remove("invalid");
   input.inputMode = useRecoveryCode ? "text" : "numeric";
   input.placeholder = useRecoveryCode ? "A1B2C3D4E5F60708" : "000000";
-  input.minLength = useRecoveryCode ? 16 : 6;
-  input.maxLength = useRecoveryCode ? 16 : 6;
-  input.pattern = useRecoveryCode ? "[A-Fa-f0-9]{16}" : "[0-9]{6}";
+  input.minLength = useRecoveryCode ? RECOVERY_CODE_LENGTH : OTP_CODE_LENGTH;
+  // O campo é partilhado pelos dois modos. O teto deve sempre comportar um
+  // código de recuperação; o modo autenticador é limitado no evento de input.
+  input.maxLength = RECOVERY_CODE_LENGTH;
+  input.pattern = useRecoveryCode
+    ? `[A-Fa-f0-9]{${RECOVERY_CODE_LENGTH}}`
+    : `[0-9]{${OTP_CODE_LENGTH}}`;
   $("#otp-label").textContent = useRecoveryCode ? "Código de recuperação" : "Código de 6 dígitos";
   $("#two-factor-description").textContent = useRecoveryCode
     ? "Introduza um dos códigos de recuperação que guardou."
@@ -376,10 +382,13 @@ $("#resend-email").addEventListener("click", async (event) => {
 
 $$('.code-input').forEach((input) => input.addEventListener("input", (event) => {
   if (event.target.id === "otp-code" && state.usingRecoveryCode) {
-    event.target.value = event.target.value.replace(/[^A-Fa-f0-9]/g, "").toUpperCase().slice(0, 16);
+    event.target.value = event.target.value
+      .replace(/[^A-Fa-f0-9]/g, "")
+      .toUpperCase()
+      .slice(0, RECOVERY_CODE_LENGTH);
     return;
   }
-  event.target.value = event.target.value.replace(/\D/g, "").slice(0, 6);
+  event.target.value = event.target.value.replace(/\D/g, "").slice(0, OTP_CODE_LENGTH);
 }));
 
 $("#toggle-recovery-code").addEventListener("click", () => {

@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.orm import Session
 from app.models.email import TemporaryEmailCode
 
@@ -16,3 +16,13 @@ def get_email_by_user(user_email: str, session: Session) -> TemporaryEmailCode |
         select(TemporaryEmailCode)
         .where(TemporaryEmailCode.user_email == user_email)
     )
+
+def delete_temporary_email(user_email: str, session: Session) -> bool:
+    result = session.execute(
+        delete(TemporaryEmailCode)
+        .where(TemporaryEmailCode.user_email == user_email)
+    )
+
+    session.flush()
+
+    return result.rowcount > 0

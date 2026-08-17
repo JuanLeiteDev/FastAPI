@@ -18,10 +18,4 @@ class RecoveryCode(Base):
         nullable=False,
     )
     hash_code: Mapped[str] = mapped_column(nullable=False)
-    used: Mapped[bool] = mapped_column(
-        Boolean,
-        default=False,
-        server_default=text("false"),
-        nullable=False,
-    )
     user: Mapped["User"] = relationship(back_populates="recovery_codes")

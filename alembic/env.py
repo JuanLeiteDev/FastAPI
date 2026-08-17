@@ -4,7 +4,7 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
-from app.database.db import Base, db_engine
+from app.database.db import Base
 from app.models.email import TemporaryEmailCode
 from app.models.recovery_code import RecoveryCode
 from app.models.user import User
